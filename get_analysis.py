@@ -11,8 +11,11 @@ from tweepy import OAuthHandler
 from tweepy import Stream
 import tweepy
 from flask import request
+import numpy as np
 
 from make_model import TwitterClassifications
+from make_model import Financial_Classification
+financeModel = Financial_Classification()
 
 application = Flask(__name__)
 api = Api(application)
@@ -57,15 +60,22 @@ def score(id):
     tweets = get_tweets(twitterApi, id, 100)
     model = TwitterClassifications()
     model.train_model()
-    score = model.predict(tweets.split())
+    tweet_score = model.predict(tweets.split())
+    title_score = financeModel.predict(jobtitle, income)
     # Call Travis Api
-    data["score"] = int(score)
+    print(tweet_score)
+    print(title_score)
+
+    avg_score = int(np.mean([tweet_score, title_score])*100)
+    print(avg_score)
+    data["score"] = avg_score
 
     response = application.response_class(
         response=json.dumps(data),
         status=200,
         mimetype='application/json'
     )
+    
 
     # print(tweets)
     return response
@@ -107,4 +117,5 @@ def get_tweets(twitterApi, id, count):
 
 
 if __name__ == "__main__":
+    financeModel.predict("CEO", 100000)
     application.run(host='0.0.0.0')
