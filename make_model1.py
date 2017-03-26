@@ -166,6 +166,7 @@ class Financial_Classification(object):
         arguements = OrderedDict()
         for col in self.data.columns:
             arguements[col] = 0
+        arguements['annualInc'] = income
         arguements['loan_amnt'] = 800
         arguements['funded_amnt'] = 800
         arguements['int_rate'] = .05
