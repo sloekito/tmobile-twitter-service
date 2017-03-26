@@ -11,6 +11,8 @@ from tweepy import OAuthHandler
 from tweepy import Stream
 import tweepy
 
+from make_model import TwitterClassifications
+
 application = Flask(__name__)
 api = Api(application)
 CORS(application)
@@ -30,13 +32,13 @@ def score(id):
     print(id)
     data = {}
     data["id"] = id
-    data["score"] = 70
+    # data["score"] = 70
 
     userInfo = {}
 
-    if id == "a":
-        data["id"] = id
-        data["score"] = 50
+    # if id == "a":
+    #     data["id"] = id
+    #     data["score"] = 50
 
     result = getUserInfo(twitterApi, id)
     userInfo = result
@@ -49,17 +51,20 @@ def score(id):
     # data["description"] = userInfo["description"]
     # data["profile_image_url"] = userInfo["profile_image_url"]
     data["last_tweet"] = userInfo.status.text
+
+    # Get last 100 tweets
+    tweets = get_tweets(twitterApi, id, 100)
+    model = TwitterClassifications()
+    model.train_model()
+    score = model.predict(tweets.split())
+    # Call Travis Api
+    data["score"] = int(score)
+
     response = application.response_class(
         response=json.dumps(data),
         status=200,
         mimetype='application/json'
     )
-
-    # Get last 100 tweets
-
-    tweets = get_tweets(twitterApi, id, 100)
-
-    # Call Travis Api
 
     # print(tweets)
     return response
