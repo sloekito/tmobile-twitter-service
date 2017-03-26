@@ -13,6 +13,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
+from collections import OrderedDict
 
 class TwitterClassifications(object):
     def __init__(self):
@@ -142,7 +143,7 @@ class Financial_Classification(object):
         loans_model = pd.concat([neg, pos])
         loans_y = loans_model.pop(y_col)
         self.data = loans_model
-        self.y =  loans_y
+        self.y =  loans_y.apply(lambda x: 1 if x > 0 else 0)
         self.train_model()
 
     def _make_dummy(self, df, cols):
@@ -162,22 +163,22 @@ class Financial_Classification(object):
     def predict(self, title, income):
         '''
         '''
-        arguements = {}
-        arguements['loan_amount'] = 800
+        arguements = OrderedDict()
+        for col in self.data.columns:
+            arguements[col] = 0
+        arguements['loan_amnt'] = 800
         arguements['funded_amnt'] = 800
         arguements['int_rate'] = .05
         arguements['installment'] = 10.8
         arguements['out_prncp'] = self.data['out_prncp'].mean()
         arguements['year'] = 2015
-        arguements['emp_{}'.format()] = 1
+        arguements['emp_title_{}'.format(title)] = 1
         arguements['home_ownership_{}'.format('own'.upper())] = 1
-        arguements['emp_length_{}'.format('10+ years'.upper())] = 1
-        arguements['term_{}'.format('36 months'.lower())] = 1
-        arguements['zip_code_{}'.format('980'[:2])] = 1
+        arguements['emp_length_{}'.format('10+ years')] = 1
+        arguements['term_ {}'.format('36 months'.lower())] = 1
+        arguements['zip_code_{}xx'.format('980'[:3])] = 1
         aset = set(arguements.keys())
-        for col in self.data.columns:
-            if col not in aset:
-                arguements[col] = 0
-        return self.predict(pd.DataFrame(arguements))
+        arguements = pd.DataFrame(arguements.values(), index=arguements.keys()).T
+        return self.model.predict_proba(arguements)[:,1][0]
         
     
