@@ -7,6 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 import sklearn.model_selection as ms
 import re
 import scipy
+import sklearn.linear_model as lm
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -94,3 +95,89 @@ class TwitterClassifications(object):
     def predict(self, input):
         predicted = self.classifier.predict_proba(input)[:,1]
         return predicted.mean() * 100
+
+class Financial_Classification(object):
+    def __init__(self):
+        '''
+        loads and cleans the dataset stored in the data folder of this repo
+        '''
+        loans = pd.read_csv('s3://gal-deason-aws/loan.csv')
+        dropcols = ['id', 'member_id', 'funded_amnt_inv', 'grade', 'sub_grade', 'verification_status',
+            'url', 'desc', 'title' , 'addr_state', 'dti', 'earliest_cr_line', 'inq_last_6mths',
+                'mths_since_last_delinq', 'mths_since_last_record', 'open_acc', 'pub_rec', 'revol_bal'
+            'revol_bal', 'revol_util', 'total_acc', 'total_pymnt', 'total_pymnt_inv', 'total_pymnt',
+            'total_pymnt_inv','total_rec_prncp', 'total_rec_int','total_rec_late_fee', 'recoveries',
+                'collection_recovery_fee','last_pymnt_d','last_pymnt_amnt','next_pymnt_d',
+                'last_credit_pull_d','collections_12_mths_ex_med','mths_since_last_major_derog','policy_code','annual_inc_joint'
+                ,'dti_joint','verification_status_joint','acc_now_delinq','tot_coll_amt','tot_cur_bal'
+                ,'open_acc_6m','open_il_6m','open_il_12m','open_il_24m','mths_since_rcnt_il','total_bal_il'
+                ,'il_util','open_rv_12m','open_rv_24m','max_bal_bc','all_util','total_rev_hi_lim'
+                ,'inq_fi','total_cu_tl','inq_last_12m'
+                    ]
+        dropcols = set(dropcols)
+        keep_cols = []
+        for col in loans.columns:
+            if col not in dropcols:
+                keep_cols.append(col)
+        y_col = 'delinq_2yrs'
+        # 'delinq_2yrs' The number of 30+ days past-due incidences of delinquency in the borrower's credit file for the past 2 years
+        purpose_keeprows = ['small_business', 'credit_card', 'other']
+        loans_ = loans[keep_cols]
+        loans_clean = loans_[loans_['purpose'] == 'credit_card']
+        loans_clean.dropna(inplace=True)
+        loans_clean_ = loans_clean.copy()
+        loans_clean_['issue_d'] = loans_clean['issue_d'].apply(pd.Timestamp)
+        loans_clean_['year'] = loans_clean_['issue_d'].apply(lambda x: x.year)
+        loans_clean_['zip_code'] = loans_clean_['zip_code'].astype('category')
+        loans_clean_.drop(['application_type', 'purpose', 'initial_list_status', 'revol_bal',
+                        'out_prncp_inv', 'revol_bal', 'pymnt_plan', 'issue_d', 'loan_status'], axis=1, inplace=True)
+        rows_need_dummies = ['emp_title', 'home_ownership', 'emp_length', 'term', 'zip_code']
+        loans_model = self._make_dummy(loans_clean_, rows_need_dummies)
+        neg = loans_model[loans_model[y_col] > 0]
+        pos = loans_model[loans_model[y_col] == 0]
+        if neg.shape[0] > pos.shape[0]:
+            neg = neg.head(pos.shape[0])
+        else:
+            pos = pos.head(neg.shape[0])
+        loans_model = pd.concat([neg, pos])
+        loans_y = loans_model.pop(y_col)
+        self.data = loans_model
+        self.y =  loans_y
+        self.train_model()
+
+    def _make_dummy(self, df, cols):
+        df_ = df.copy()
+        for col in cols:
+            for value in df[col].value_counts().nlargest(50).index:
+                df_['{}_{}'.format(col, value)] = df[col] == value
+            df_.drop(col, axis=1, inplace=True)
+        return df_
+    
+    def train_model(self):
+        '''
+        '''
+        self.model = lm.LogisticRegression(n_jobs=-1)
+        self.model.fit(self.data, self.y)
+
+    def predict(self, title, income):
+        '''
+        '''
+        arguements = {}
+        arguements['loan_amount'] = 800
+        arguements['funded_amnt'] = 800
+        arguements['int_rate'] = .05
+        arguements['installment'] = 10.8
+        arguements['out_prncp'] = self.data['out_prncp'].mean()
+        arguements['year'] = 2015
+        arguements['emp_{}'.format()] = 1
+        arguements['home_ownership_{}'.format('own'.upper())] = 1
+        arguements['emp_length_{}'.format('10+ years'.upper())] = 1
+        arguements['term_{}'.format('36 months'.lower())] = 1
+        arguements['zip_code_{}'.format('980'[:2])] = 1
+        aset = set(arguements.keys())
+        for col in self.data.columns:
+            if col not in aset:
+                arguements[col] = 0
+        return self.predict(pd.DataFrame(arguements))
+        
+    
