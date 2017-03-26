@@ -10,6 +10,7 @@ from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 import tweepy
+from flask import request
 
 from make_model import TwitterClassifications
 
@@ -25,6 +26,12 @@ TWITTER_CONSUMER_SECRET = "UqVh1MQkCPdU117MCYm8xeoUJdWlALrZlJ04Sj76ttQOxsrdNz"
 
 @application.route("/score/<id>")
 def score(id):
+
+    income = request.args.get('income')
+    jobtitle = request.args.get('jobtitle')
+
+    print(income)
+    print(jobtitle)
     auth = OAuthHandler(TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET)
     auth.set_access_token(TWITTER_OAUTH_TOKEN, TWITTER_OAUTH_SECRET)
 
@@ -36,10 +43,6 @@ def score(id):
 
     userInfo = {}
 
-    # if id == "a":
-    #     data["id"] = id
-    #     data["score"] = 50
-
     result = getUserInfo(twitterApi, id)
     userInfo = result
     # print(userInfo)
@@ -48,8 +51,6 @@ def score(id):
     data["description"] = userInfo.description
     data["profile_image_url"] = userInfo.profile_image_url
 
-    # data["description"] = userInfo["description"]
-    # data["profile_image_url"] = userInfo["profile_image_url"]
     data["last_tweet"] = userInfo.status.text
 
     # Get last 100 tweets
