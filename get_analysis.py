@@ -21,10 +21,10 @@ application = Flask(__name__)
 api = Api(application)
 CORS(application)
 
-TWITTER_OAUTH_TOKEN = "1733217704-mRoZiblpaY3Dm4PHdusohME83KXfASrnmviJrvS"
-TWITTER_OAUTH_SECRET = "QtFUDlVFkaqbrHgSmbJ952OmwmLNymtADdNcSEI7N6iSl"
-TWITTER_CONSUMER_KEY = "hkF8zr3wn9obDaRf3RSX0O7qk"
-TWITTER_CONSUMER_SECRET = "UqVh1MQkCPdU117MCYm8xeoUJdWlALrZlJ04Sj76ttQOxsrdNz"
+TWITTER_OAUTH_TOKEN = ""
+TWITTER_OAUTH_SECRET = ""
+TWITTER_CONSUMER_KEY = ""
+TWITTER_CONSUMER_SECRET = ""
 
 
 @application.route("/score/<id>")
